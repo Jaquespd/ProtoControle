@@ -156,7 +156,7 @@ void loop() {
     }
 
   }
-
+//d
 //------------------------VERIFICAÇÕES-----------------------------
 //verifica se há requisição do cliente (app celular) e encaminha para a ação a ser tomada
 void checkJson() {
