@@ -31,6 +31,7 @@ WiFiClient client = server.available();
 void serializeRelay (Relay relay[], char* json);
 bool deserializeRelay(Relay relay[], char* json);
 void clientResponse(WiFiClient& client, char* json);
+void clientResponse(WiFiClient& client);
 void CheckClientRequest();
 void reactionRequest(String request);
 
@@ -119,6 +120,17 @@ void clientResponse(WiFiClient& client, char* json)
     Serial.println("Client disonnected");
   }
 
+void clientResponse(WiFiClient& client)
+{
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close");
+    client.println();
+
+    client.stop();
+    Serial.println("Client disonnected");
+  }
+
 void CheckClientRequest()
 {
     // Check if a client has connected
@@ -172,11 +184,19 @@ void CheckClientRequest()
 
 void reactionRequest(String request)
 {
+  bool returnJson=false;
   if(request.indexOf("PORTAS") != -1){
     serializeRelay(relay, json);
+    returnJson=true;
     }
   if(request.indexOf("ATIVAR") != -1){
     deserializeRelay(relay, json);
+    returnJson=false;
     }
-  clientResponse(client, json);
+  if (returnJson){
+    clientResponse(client,json);
+  } else {
+    clientResponse(client);
+  }
+  
 }
