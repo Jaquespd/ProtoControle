@@ -4,7 +4,7 @@
 
 #define N_PROGRAMMING 10
 #define N_RELAY 4
-#define maxSizeJson 100
+#define maxSizeJson 1000
 
 
 typedef struct Relay_t {
@@ -12,7 +12,14 @@ typedef struct Relay_t {
   int state;
 }Relay;
 
+typedef struct Programming_t {
+  int id;
+  unsigned long timeOn;
+  unsigned long timeOff;
+}Programming;
+
 Relay relay[N_RELAY];
+Programming programming[N_PROGRAMMING];
 
 char json[maxSizeJson];
 //char* json="s";
@@ -33,7 +40,9 @@ bool deserializeRelay(Relay relay[], char* json);
 void clientResponse(WiFiClient& client, char* json);
 void clientResponse(WiFiClient& client);
 void CheckClientRequest();
-void reactionRequest(String request);
+void ListReactionRequest(String request);
+void serializeProgramming (Programming programming[], char* json);
+bool deserializeProgramming(Programming programming[], char* json);
 
 
 void setup()
@@ -67,6 +76,14 @@ void loop ()
       relay[i]=relay2;
     }
 
+    Programming programming2;
+    programming2.id=0;
+    programming2.timeOn=72000;
+    programming2.timeOn=79000;
+    for (int i=0;i<N_PROGRAMMING;i++){
+      programming[i]=programming2;
+    }
+
     CheckClientRequest();
 
 
@@ -89,6 +106,29 @@ void serializeRelay (Relay relay[], char* json)
 
   }
 
+void serializeProgramming (Programming programming[], char* json)
+{
+    //StaticJsonBuffer<200> jsonBuffer;
+    DynamicJsonBuffer jsonBuffer;
+    JsonArray& array = jsonBuffer.createArray();
+    for (int i=0;i<N_PROGRAMMING;i++){
+      JsonObject& nested = array.createNestedObject();
+      nested["id"] = programming[i].id;
+      unsigned int hourOn = programming[i].timeOn/3600;
+      unsigned int minuteOn = (programming[i].timeOn%3600)/60;
+      unsigned int secondOn = programming[i].timeOn%60;
+      nested["HoraLigar"] = String(hourOn) + ":" + String(minuteOn) + ":" + String(secondOn);
+      unsigned int hourOff = programming[i].timeOff/3600;
+      unsigned int minuteOff = (programming[i].timeOff%3600)/60;
+      unsigned int secondOff = programming[i].timeOff%60;
+      nested["HoraDesligar"] = String(hourOff) + ":" + String(minuteOff) + ":" + String(secondOff);
+
+    }
+    array.printTo(json,maxSizeJson);
+    array.printTo(Serial);
+
+}
+
 bool deserializeRelay(Relay relay[], char* json)
 {
     DynamicJsonBuffer jsonBuffer;
@@ -101,6 +141,52 @@ bool deserializeRelay(Relay relay[], char* json)
       //Serial.println(relay[i].id);
       //Serial.println(relay[i].state);
     }
+    return array.success();
+    //return true;
+
+}
+
+bool deserializeProgramming(Programming programming[], char* json)
+{
+    DynamicJsonBuffer jsonBuffer;
+    Serial.println(json);
+    JsonArray& array = jsonBuffer.parseArray(json);
+    for(int i=0;i<N_PROGRAMMING;i++){
+      programming[i].id = array[i]["id"];//talvez precise transformar em int
+      //idRele[i]=_idRele.toInt();
+      unsigned long timeOn;
+      {
+        String hourOn = array[i]["HoraLigar"];
+        hourOn = hourOn.substring(0,2);
+        String minuteOn = array[i]["HoraLigar"];
+        minuteOn = minuteOn.substring(3,5);
+        String secondOn = array[i]["HoraLigar"];
+        secondOn = secondOn.substring(6,8);
+        timeOn=3600*hourOn.toInt()+60*minuteOn.toInt()+secondOn.toInt();
+      }
+      programming[i].timeOn=timeOn;
+      unsigned long timeOff;
+      {
+        String hourOff = array[i]["HoraDesligar"];
+        hourOff = hourOff.substring(0,2);
+        String minuteOff = array[i]["HoraDesligar"];
+        minuteOff = minuteOff.substring(3,5);
+        String secondOff = array[i]["HoraDesligar"];
+        secondOff = secondOff.substring(6,8);
+        timeOff=3600*hourOff.toInt()+60*minuteOff.toInt()+secondOff.toInt();
+      }
+      programming[i].timeOff=timeOff;
+      Serial.println("");
+      Serial.print("Programacao n: ");
+      Serial.print(i+1);
+      Serial.print(": O rele ");
+      Serial.print(programming[i].id);
+      Serial.print(" sera acionado em: ");
+      Serial.print(programming[i].timeOn);
+      Serial.print(" e desligado em: ");
+      Serial.println(programming[i].timeOff);
+      }
+
     return array.success();
     //return true;
 
@@ -178,11 +264,11 @@ void CheckClientRequest()
           }
         }
     //identifica o que a requisição pediu e encaminha para a rotina que vai realizar a ação
-    reactionRequest(req);
+    ListReactionRequest(req);
 
 }
 
-void reactionRequest(String request)
+void ListReactionRequest(String request)
 {
   bool returnJson=false;
   if(request.indexOf("PORTAS") != -1){
@@ -193,10 +279,16 @@ void reactionRequest(String request)
     deserializeRelay(relay, json);
     returnJson=false;
     }
+  if(request.indexOf("PROG") != -1){
+    serializeProgramming(programming, json);
+    returnJson=true;
+    }
+
+
   if (returnJson){
     clientResponse(client,json);
   } else {
     clientResponse(client);
   }
-  
+
 }
