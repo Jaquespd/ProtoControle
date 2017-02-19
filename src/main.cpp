@@ -6,6 +6,7 @@
 #define N_RELAY 4
 #define maxSizeJson 1000
 
+const int PORT_RELAYS[N_RELAY]={5,4,14,12};
 
 typedef struct Relay_t {
   int id;
@@ -43,10 +44,15 @@ void CheckClientRequest();
 void ListReactionRequest(String request);
 void serializeProgramming (Programming programming[], char* json);
 bool deserializeProgramming(Programming programming[], char* json);
+void updateStateRelays();
+void readStateRelays();
 
 
 void setup()
 {
+  for (int i = 0; i<N_RELAY; i++){
+    pinMode(PORT_RELAYS[i], OUTPUT);
+    }
 
   Serial.begin(115200);
   WiFi.begin(ssid, password);
@@ -272,11 +278,13 @@ void ListReactionRequest(String request)
 {
   bool returnJson=false;
   if(request.indexOf("PORTAS") != -1){
+    readStateRelays();
     serializeRelay(relay, json);
     returnJson=true;
     }
   if(request.indexOf("ATIVAR") != -1){
     deserializeRelay(relay, json);
+    updateStateRelays();
     returnJson=false;
     }
   if(request.indexOf("PROG") != -1){
@@ -291,4 +299,22 @@ void ListReactionRequest(String request)
     clientResponse(client);
   }
 
+}
+
+void updateStateRelays()
+{
+  for (int i=0;i<N_RELAY;i++){
+    digitalWrite(PORT_RELAYS[i],relay[i].state);
+    }
+}
+
+void readStateRelays()
+{
+  for (int i=0;i<N_RELAY;i++){
+    if (digitalRead(PORT_RELAYS[i])==HIGH){
+      relay[i].state = 1;
+      }else{
+        relay[i].state = 0;
+        }
+  }
 }
