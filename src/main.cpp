@@ -1,12 +1,25 @@
 #include <Arduino.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 
 #define N_PROGRAMMING 10
 #define N_RELAY 4
 #define maxSizeJson 1000
-
+#define UPDATE_NTP 3600000 //in milliseconds
+#define TIMEZONE -10800 //in milliseconds
 const int PORT_RELAYS[N_RELAY]={5,4,14,12};
+
+
+WiFiUDP ntpUDP;
+// You can specify the time server pool and the offset (in seconds, can be
+// changed later with setTimeOffset() ). Additionaly you can specify the
+// update interval (in milliseconds, can be changed using setUpdateInterval() ).
+NTPClient timeClient(ntpUDP, "time.nist.gov", TIMEZONE, UPDATE_NTP);
+
+//NTPClient timeClient(ntpUDP);
+
 
 typedef struct Relay_t {
   int id;
@@ -55,6 +68,7 @@ void setup()
     }
 
   Serial.begin(115200);
+  timeClient.begin();
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -70,17 +84,17 @@ void setup()
 
   // Print the IP address
   Serial.println(WiFi.localIP());
-
+  timeClient.forceUpdate();
   }
 
 void loop ()
 {
-    Relay relay2;
-    relay2.id=0;
-    relay2.state=1;
-    for (int i=0;i<N_RELAY;i++){
-      relay[i]=relay2;
-    }
+    readStateRelays();
+
+    delay(3000);
+    Serial.println(timeClient.getFormattedTime());
+    timeClient.update();
+
 
     Programming programming2;
     programming2.id=0;
@@ -91,6 +105,7 @@ void loop ()
     }
 
     CheckClientRequest();
+
 
 
   }
@@ -316,5 +331,15 @@ void readStateRelays()
       }else{
         relay[i].state = 0;
         }
+  }
+}
+
+void testProtoControl()
+{
+  int horaAtual;
+  for (int i=0; i<N_PROGRAMMING; i++) {
+    programming[i].id = (i+1)%4;
+    programming[i].timeOn = horaAtual + (i*10);
+    programming[i].timeOff = programming[i].timeOn + 5;
   }
 }
