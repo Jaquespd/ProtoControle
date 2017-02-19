@@ -30,6 +30,9 @@ WiFiClient client = server.available();
 
 void serializeRelay (Relay relay[], char* json);
 bool deserializeRelay(Relay relay[], char* json);
+void clientResponse(WiFiClient& client, char* json);
+void CheckClientRequest();
+void reactionRequest(String request);
 
 
 void setup()
@@ -59,16 +62,13 @@ void loop ()
     Relay relay2;
     relay2.id=0;
     relay2.state=1;
+    for (int i=0;i<N_RELAY;i++){
+      relay[i]=relay2;
+    }
 
-    relay[0]=relay2;
-    relay[1]=relay2;
-    relay[2]=relay2;
-    relay[3]=relay2;
+    CheckClientRequest();
 
-    serializeRelay(relay, json);
-    delay(3000);
-    deserializeRelay(relay,json);
-    delay(3000);
+
   }
 
 void serializeRelay (Relay relay[], char* json)
@@ -103,4 +103,80 @@ bool deserializeRelay(Relay relay[], char* json)
     return array.success();
     //return true;
 
+}
+
+void clientResponse(WiFiClient& client, char* json)
+{
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close");
+    client.println();
+
+    //Serial.println(json);
+    client.println(json);
+    delay(1);
+    client.stop();
+    Serial.println("Client disonnected");
+  }
+
+void CheckClientRequest()
+{
+    // Check if a client has connected
+    client = server.available();
+    if (!client) {
+      return;
+      }
+
+    // Wait until the client sends some data
+    Serial.println("new client");
+    while(!client.available()){
+      delay(1);
+      }
+
+    // Read the first line of the request
+    String req = client.readString();
+    Serial.println(req);
+    client.flush();
+
+    int beginJson = 0;
+    int endJson = 0;
+    String msgReceive;
+  //a rotina abaixo verifica se é um objeto json ou array, e faz a separação do json do resto da requisição
+    if(req.indexOf("[")!= -1){
+    beginJson = req.indexOf("[");
+    endJson = req.indexOf("]");
+    Serial.print("inicioJson: ");
+    Serial.println(beginJson);
+    Serial.print("fimJson: ");
+    Serial.println(endJson);
+    msgReceive = req.substring(beginJson,endJson+1);
+    Serial.print("msgRecebida: ");
+    Serial.println(msgReceive);
+      }else{
+        if(req.indexOf("{")!= -1){
+        beginJson = req.indexOf("{");
+        endJson = req.indexOf("}");
+        Serial.print("inicioJson: ");
+        Serial.println(beginJson);
+        Serial.print("fimJson: ");
+        Serial.println(endJson);
+        msgReceive = req.substring(beginJson,endJson+1);
+        Serial.print("msgRecebida: ");
+        Serial.println(msgReceive);
+          }
+        }
+    //identifica o que a requisição pediu e encaminha para a rotina que vai realizar a ação
+    reactionRequest(req);
+
+}
+
+void reactionRequest(String request)
+{
+  if(request.indexOf("PORTAS") != -1){
+    serializeRelay(relay, json);
+    }
+  if(request.indexOf("ATIVAR") != -1){
+    deserializeRelay(relay, json);
+    }
+  clientResponse(client, json);
 }
