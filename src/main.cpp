@@ -108,7 +108,6 @@ void loop ()
 
 void serializeRelay (Relay relay[], char* json)
 {
-    //StaticJsonBuffer<200> jsonBuffer;
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
     for (int i=0;i<N_RELAY;i++){
@@ -116,8 +115,6 @@ void serializeRelay (Relay relay[], char* json)
       nested["id"] = relay[i].id;
       nested["estado"] = relay[i].state;
     }
-    //size_t len = root.measureLength();
-    //size_t size = len+1;
     array.printTo(json,maxSizeJson);
     array.printTo(Serial);
 
@@ -146,13 +143,8 @@ bool deserializeRelay(Relay relay[], char* json)
     for (int i=0;i<N_RELAY;i++){
       relay[i].id = array[i]["id"];
       relay[i].state = array[i]["estado"];
-      //json=[{id:1,estado:1},{id:2,estado:1},{id:3,estado:1},{id:4,estado:1}]
-      //Serial.println(relay[i].id);
-      //Serial.println(relay[i].state);
     }
     return array.success();
-    //return true;
-
 }
 
 bool deserializeProgramming(Programming programming[], char* json)
@@ -164,21 +156,10 @@ bool deserializeProgramming(Programming programming[], char* json)
       programming[i].id = array[i]["id"];//talvez precise transformar em int
       programming[i].timeOn=timeClient.convertEpochTime(array[i]["HoraLigar"]);
       programming[i].timeOff=timeClient.convertEpochTime(array[i]["HoraDesligar"]);
-
-      Serial.println("");
-      Serial.print("Programacao n: ");
-      Serial.print(i+1);
-      Serial.print(": O rele ");
-      Serial.print(programming[i].id);
-      Serial.print(" sera acionado em: ");
-      Serial.print(programming[i].timeOn);
-      Serial.print(" e desligado em: ");
-      Serial.println(programming[i].timeOff);
       }
+    printProgramming();
 
     return array.success();
-    //return true;
-
 }
 
 void clientResponse(WiFiClient& client, char* json)
@@ -228,14 +209,10 @@ void CheckClientRequest()
     int beginJson = 0;
     int endJson = 0;
     String msgReceive;
-  //a rotina abaixo verifica se é um objeto json ou array, e faz a separação do json do resto da requisição
+    //a rotina abaixo verifica se é um objeto json ou array, e faz a separação do json do resto da requisição
     if(req.indexOf("[")!= -1){
     beginJson = req.indexOf("[");
     endJson = req.indexOf("]");
-    Serial.print("inicioJson: ");
-    Serial.println(beginJson);
-    Serial.print("fimJson: ");
-    Serial.println(endJson);
     msgReceive = req.substring(beginJson,endJson+1);
     Serial.print("msgRecebida: ");
     Serial.println(msgReceive);
@@ -243,10 +220,6 @@ void CheckClientRequest()
         if(req.indexOf("{")!= -1){
         beginJson = req.indexOf("{");
         endJson = req.indexOf("}");
-        Serial.print("inicioJson: ");
-        Serial.println(beginJson);
-        Serial.print("fimJson: ");
-        Serial.println(endJson);
         msgReceive = req.substring(beginJson,endJson+1);
         Serial.print("msgRecebida: ");
         Serial.println(msgReceive);
