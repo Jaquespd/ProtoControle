@@ -59,8 +59,9 @@ void serializeProgramming (Programming programming[], char* json);
 bool deserializeProgramming(Programming programming[], char* json);
 void updateStateRelays();
 void readStateRelays();
+void testProtoControl();
 
-
+int a = 0;
 void setup()
 {
   for (int i = 0; i<N_RELAY; i++){
@@ -90,22 +91,13 @@ void setup()
 void loop ()
 {
     readStateRelays();
-
-    delay(3000);
+    testProtoControl();
     Serial.println(timeClient.getFormattedTime());
     timeClient.update();
-
-
-    Programming programming2;
-    programming2.id=0;
-    programming2.timeOn=72000;
-    programming2.timeOn=79000;
-    for (int i=0;i<N_PROGRAMMING;i++){
-      programming[i]=programming2;
-    }
-
-    CheckClientRequest();
-
+    Serial.println(timeClient.convertFormattedTime(10800));
+    delay(3000);
+    Serial.println(timeClient.convertEpochTime("1:10:10"));
+    delay(3000);
 
 
   }
@@ -336,10 +328,10 @@ void readStateRelays()
 
 void testProtoControl()
 {
-  int horaAtual;
+  unsigned long now = timeClient.getEpochTime();
   for (int i=0; i<N_PROGRAMMING; i++) {
     programming[i].id = (i+1)%4;
-    programming[i].timeOn = horaAtual + (i*10);
+    programming[i].timeOn = now + (i*10);
     programming[i].timeOff = programming[i].timeOn + 5;
   }
 }
