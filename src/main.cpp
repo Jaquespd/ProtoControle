@@ -60,6 +60,10 @@ bool deserializeProgramming(Programming programming[], char* json);
 void updateStateRelays();
 void readStateRelays();
 void testProtoControl();
+void checkReactionProgramming();
+void printProgramming ();
+void printRelays ();
+
 
 int a = 0;
 void setup()
@@ -86,18 +90,18 @@ void setup()
   // Print the IP address
   Serial.println(WiFi.localIP());
   timeClient.forceUpdate();
+  readStateRelays();
+  testProtoControl();
+  printRelays();
+  printProgramming();
+
   }
 
 void loop ()
 {
-    readStateRelays();
-    testProtoControl();
-    Serial.println(timeClient.getFormattedTime());
     timeClient.update();
-    Serial.println(timeClient.convertFormattedTime(10800));
-    delay(3000);
-    Serial.println(timeClient.convertEpochTime("1:10:10"));
-    delay(3000);
+    CheckClientRequest();
+    checkReactionProgramming();
 
 
   }
@@ -121,21 +125,13 @@ void serializeRelay (Relay relay[], char* json)
 
 void serializeProgramming (Programming programming[], char* json)
 {
-    //StaticJsonBuffer<200> jsonBuffer;
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
     for (int i=0;i<N_PROGRAMMING;i++){
       JsonObject& nested = array.createNestedObject();
       nested["id"] = programming[i].id;
-      unsigned int hourOn = programming[i].timeOn/3600;
-      unsigned int minuteOn = (programming[i].timeOn%3600)/60;
-      unsigned int secondOn = programming[i].timeOn%60;
-      nested["HoraLigar"] = String(hourOn) + ":" + String(minuteOn) + ":" + String(secondOn);
-      unsigned int hourOff = programming[i].timeOff/3600;
-      unsigned int minuteOff = (programming[i].timeOff%3600)/60;
-      unsigned int secondOff = programming[i].timeOff%60;
-      nested["HoraDesligar"] = String(hourOff) + ":" + String(minuteOff) + ":" + String(secondOff);
-
+      nested["HoraLigar"] = timeClient.convertFormattedTime(programming[i].timeOn);
+      nested["HoraDesligar"] = timeClient.convertFormattedTime(programming[i].timeOff);
     }
     array.printTo(json,maxSizeJson);
     array.printTo(Serial);
@@ -166,29 +162,9 @@ bool deserializeProgramming(Programming programming[], char* json)
     JsonArray& array = jsonBuffer.parseArray(json);
     for(int i=0;i<N_PROGRAMMING;i++){
       programming[i].id = array[i]["id"];//talvez precise transformar em int
-      //idRele[i]=_idRele.toInt();
-      unsigned long timeOn;
-      {
-        String hourOn = array[i]["HoraLigar"];
-        hourOn = hourOn.substring(0,2);
-        String minuteOn = array[i]["HoraLigar"];
-        minuteOn = minuteOn.substring(3,5);
-        String secondOn = array[i]["HoraLigar"];
-        secondOn = secondOn.substring(6,8);
-        timeOn=3600*hourOn.toInt()+60*minuteOn.toInt()+secondOn.toInt();
-      }
-      programming[i].timeOn=timeOn;
-      unsigned long timeOff;
-      {
-        String hourOff = array[i]["HoraDesligar"];
-        hourOff = hourOff.substring(0,2);
-        String minuteOff = array[i]["HoraDesligar"];
-        minuteOff = minuteOff.substring(3,5);
-        String secondOff = array[i]["HoraDesligar"];
-        secondOff = secondOff.substring(6,8);
-        timeOff=3600*hourOff.toInt()+60*minuteOff.toInt()+secondOff.toInt();
-      }
-      programming[i].timeOff=timeOff;
+      programming[i].timeOn=timeClient.convertEpochTime(array[i]["HoraLigar"]);
+      programming[i].timeOff=timeClient.convertEpochTime(array[i]["HoraDesligar"]);
+
       Serial.println("");
       Serial.print("Programacao n: ");
       Serial.print(i+1);
@@ -326,12 +302,64 @@ void readStateRelays()
   }
 }
 
+void checkReactionProgramming()
+{
+  unsigned now = timeClient.getEpochTime();
+  for (int i=0; i<N_PROGRAMMING; i++) {
+    if (programming[i].timeOn<programming[i].timeOff) {
+      if (programming[i].timeOn<= now && now <= programming[i].timeOff) {
+        relay[programming[i].id].state = 1;
+      } else {
+        relay[programming[i].id].state = 0;
+      }
+    }
+    if (programming[i].timeOn>programming[i].timeOff) {
+      if (programming[i].timeOn<= now || now <= programming[i].timeOff) {
+        relay[programming[i].id].state = 1;
+      } else {
+        relay[programming[i].id].state = 0;
+      }
+    }
+  }
+  updateStateRelays();
+}
+
 void testProtoControl()
 {
   unsigned long now = timeClient.getEpochTime();
   for (int i=0; i<N_PROGRAMMING; i++) {
-    programming[i].id = (i+1)%4;
-    programming[i].timeOn = now + (i*10);
-    programming[i].timeOff = programming[i].timeOn + 5;
+    programming[i].id = (i%4)+1;
+    programming[i].timeOn = now + ((i+1)*5);
+    programming[i].timeOff = programming[i].timeOn + 2;
+  }
+}
+
+void printProgramming ()
+{
+  Serial.println("");
+  Serial.print("Hora atual: ");
+  Serial.println(timeClient.getFormattedTime());
+  for (int i = 0; i<N_PROGRAMMING; i++) {
+    Serial.println("");
+    Serial.print("Programação n: ");
+    Serial.print(i+1);
+    Serial.print("; Rele: ");
+    Serial.print(programming[i].id);
+    Serial.print("; Hora de Ligar: ");
+    Serial.print(timeClient.convertFormattedTime(programming[i].timeOn));
+    Serial.print("; Hora de Desligar: ");
+    Serial.print(timeClient.convertFormattedTime(programming[i].timeOff));
+    Serial.println(".");
+  }
+}
+
+void printRelays ()
+{
+  for (int i = 0; i<N_RELAY; i++) {
+    Serial.println("");
+    Serial.print("Rele n: ");
+    Serial.print(relay[i].id);
+    Serial.print("; Estado da porta: ");
+    Serial.println(relay[i].state);
   }
 }
