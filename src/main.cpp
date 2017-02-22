@@ -3,28 +3,23 @@
 #include <WiFiUdp.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
+#include <Relays.h>
 
 #define N_PROGRAMMING 10
-#define N_RELAY 4
-#define maxSizeJson 1000
+//#define N_RELAY 4
+//#define maxSizeJson 1000
 #define UPDATE_NTP 3600000 //in milliseconds
 #define TIMEZONE -10800 //in milliseconds
-const int PORT_RELAYS[N_RELAY]={5,4,14,12};
+//const int PORT_RELAYS[N_RELAY]={5,4,14,12};
 
-
+//Relay relays;
 WiFiUDP ntpUDP;
 // You can specify the time server pool and the offset (in seconds, can be
 // changed later with setTimeOffset() ). Additionaly you can specify the
 // update interval (in milliseconds, can be changed using setUpdateInterval() ).
 NTPClient timeClient(ntpUDP, "time.nist.gov", TIMEZONE, UPDATE_NTP);
-
+//Relays Relays2;
 //NTPClient timeClient(ntpUDP);
-
-
-typedef struct Relay_t {
-  int id;
-  int state;
-}Relay;
 
 typedef struct Programming_t {
   int id;
@@ -32,10 +27,10 @@ typedef struct Programming_t {
   unsigned long timeOff;
 }Programming;
 
-Relay relay[N_RELAY];
+Relays relays;
 Programming programming[N_PROGRAMMING];
 
-char json[maxSizeJson];
+char json[1000];
 //char* json="s";
 
 
@@ -49,28 +44,21 @@ const char* password = "Harien22";
 WiFiServer server(80);
 WiFiClient client = server.available();
 
-void serializeRelay (Relay relay[], char* json);
-bool deserializeRelay(Relay relay[], char* json);
 void clientResponse(WiFiClient& client, char* json);
 void clientResponse(WiFiClient& client);
 void CheckClientRequest();
 void ListReactionRequest(String request);
 void serializeProgramming (Programming programming[], char* json);
 bool deserializeProgramming(Programming programming[], char* json);
-void updateStateRelays();
-void readStateRelays();
 void testProtoControl();
 void checkReactionProgramming();
 void printProgramming ();
-void printRelays ();
 
 
 int a = 0;
 void setup()
 {
-  for (int i = 0; i<N_RELAY; i++){
-    pinMode(PORT_RELAYS[i], OUTPUT);
-    }
+
 
   Serial.begin(115200);
   timeClient.begin();
@@ -90,9 +78,9 @@ void setup()
   // Print the IP address
   Serial.println(WiFi.localIP());
   timeClient.forceUpdate();
-  readStateRelays();
+  relays.read();
   testProtoControl();
-  printRelays();
+  relays.print();
   printProgramming();
 
   }
@@ -102,21 +90,8 @@ void loop ()
     timeClient.update();
     CheckClientRequest();
     checkReactionProgramming();
+    //relays_.begin(relay);
 
-
-  }
-
-void serializeRelay (Relay relay[], char* json)
-{
-    DynamicJsonBuffer jsonBuffer;
-    JsonArray& array = jsonBuffer.createArray();
-    for (int i=0;i<N_RELAY;i++){
-      JsonObject& nested = array.createNestedObject();
-      nested["id"] = relay[i].id;
-      nested["estado"] = relay[i].state;
-    }
-    array.printTo(json,maxSizeJson);
-    array.printTo(Serial);
 
   }
 
@@ -135,17 +110,6 @@ void serializeProgramming (Programming programming[], char* json)
 
 }
 
-bool deserializeRelay(Relay relay[], char* json)
-{
-    DynamicJsonBuffer jsonBuffer;
-    Serial.println(json);
-    JsonArray& array = jsonBuffer.parseArray(json);
-    for (int i=0;i<N_RELAY;i++){
-      relay[i].id = array[i]["id"];
-      relay[i].state = array[i]["estado"];
-    }
-    return array.success();
-}
 
 bool deserializeProgramming(Programming programming[], char* json)
 {
@@ -234,13 +198,13 @@ void ListReactionRequest(String request)
 {
   bool returnJson=false;
   if(request.indexOf("PORTAS") != -1){
-    readStateRelays();
-    serializeRelay(relay, json);
+    relays.read();
+    relays.serialize(json);
     returnJson=true;
     }
   if(request.indexOf("ATIVAR") != -1){
-    deserializeRelay(relay, json);
-    updateStateRelays();
+    relays.deserialize(json);
+    relays.updateState();
     returnJson=false;
     }
   if(request.indexOf("PROG") != -1){
@@ -257,44 +221,26 @@ void ListReactionRequest(String request)
 
 }
 
-void updateStateRelays()
-{
-  for (int i=0;i<N_RELAY;i++){
-    digitalWrite(PORT_RELAYS[i],relay[i].state);
-    }
-}
-
-void readStateRelays()
-{
-  for (int i=0;i<N_RELAY;i++){
-    if (digitalRead(PORT_RELAYS[i])==HIGH){
-      relay[i].state = 1;
-      }else{
-        relay[i].state = 0;
-        }
-  }
-}
-
 void checkReactionProgramming()
 {
   unsigned now = timeClient.getEpochTime();
   for (int i=0; i<N_PROGRAMMING; i++) {
     if (programming[i].timeOn<programming[i].timeOff) {
       if (programming[i].timeOn<= now && now <= programming[i].timeOff) {
-        relay[programming[i].id].state = 1;
+        relays.write(programming[i].id, 1, i);
       } else {
-        relay[programming[i].id].state = 0;
+        relays.write(programming[i].id, 0, i);
       }
     }
     if (programming[i].timeOn>programming[i].timeOff) {
       if (programming[i].timeOn<= now || now <= programming[i].timeOff) {
-        relay[programming[i].id].state = 1;
+        relays.write(programming[i].id, 1, i);
       } else {
-        relay[programming[i].id].state = 0;
+        relays.write(programming[i].id, 0, i);
       }
     }
   }
-  updateStateRelays();
+  relays.updateState();
 }
 
 void testProtoControl()
@@ -323,16 +269,5 @@ void printProgramming ()
     Serial.print("; Hora de Desligar: ");
     Serial.print(timeClient.convertFormattedTime(programming[i].timeOff));
     Serial.println(".");
-  }
-}
-
-void printRelays ()
-{
-  for (int i = 0; i<N_RELAY; i++) {
-    Serial.println("");
-    Serial.print("Rele n: ");
-    Serial.print(relay[i].id);
-    Serial.print("; Estado da porta: ");
-    Serial.println(relay[i].state);
   }
 }
