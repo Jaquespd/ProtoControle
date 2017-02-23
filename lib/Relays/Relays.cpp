@@ -7,7 +7,7 @@ Relays::Relays() {
 }
 
 void Relays::begin() {
-  Serial.println("Deu certo!");
+  Serial.println("Deu certo Relay!");
 }
 
 void Relays::write(int id, int state, int i) {
