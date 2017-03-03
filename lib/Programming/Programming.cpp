@@ -40,28 +40,6 @@ bool Programming::deserialize(char* json)
     return array.success();
 }
 
-void Programming::checkReaction(Relays relays, unsigned long getEpochTime)
-{
-  unsigned long now = getEpochTime;
-  for (int i=0; i<N_PROGRAMMING; i++) {
-    if (this->_programming[i].timeOn < this->_programming[i].timeOff) {
-      if (this->_programming[i].timeOn <= now && now <= this->_programming[i].timeOff) {
-        relays.write(this->_programming[i].id, 1, i);
-      } else {
-        relays.write(this->_programming[i].id, 0, i);
-      }
-    }
-    if (this->_programming[i].timeOn > this->_programming[i].timeOff) {
-      if (this->_programming[i].timeOn <= now || now <= this->_programming[i].timeOff) {
-        relays.write(programming[i].id, 1, i);
-      } else {
-        relays.write(programming[i].id, 0, i);
-      }
-    }
-  }
-  relays.updateState();
-}
-
 void Programming::random(unsigned long getEpochTime)
 {
   unsigned long now = getEpochTime;

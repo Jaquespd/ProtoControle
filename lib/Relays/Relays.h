@@ -2,6 +2,7 @@
 
 #include "Arduino.h"
 #include <ArduinoJson.h>
+#include <Programming.h>
 
 #define N_RELAY 4
 #define maxSizeJson 1000
@@ -27,5 +28,7 @@ class Relays {
     bool deserialize(char* json);
     void updateState();
     void print();
+    void checkReaction(Programming programming, unsigned long getEpochTime);
+    
 
 };

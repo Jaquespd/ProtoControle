@@ -71,3 +71,25 @@ void Relays::print()
     Serial.println(this->_relays[i].state);
   }
 }
+
+void Relays::checkReaction(Programming programming, unsigned long getEpochTime)
+{
+  unsigned long now = getEpochTime;
+  for (int i=0; i<N_PROGRAMMING; i++) {
+    if (programming._programming[i].timeOn < programming._programming[i].timeOff) {
+      if (programming._programming[i].timeOn <= now && now <= programming._programming[i].timeOff) {
+        Relays::write(programming._programming[i].id, 1, i);
+      } else {
+        Relays::write(programming._programming[i].id, 0, i);
+      }
+    }
+    if (programming._programming[i].timeOn > programming._programming[i].timeOff) {
+      if (programming._programming[i].timeOn <= now || now <= programming._programming[i].timeOff) {
+        Relays::write(programming._programming[i].id, 1, i);
+      } else {
+        Relays::write(programming._programming[i].id, 0, i);
+      }
+    }
+  }
+  Relays::updateState();
+}
