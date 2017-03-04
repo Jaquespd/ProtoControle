@@ -29,6 +29,6 @@ class Relays {
     void updateState();
     void print();
     void checkReaction(Programming programming, unsigned long getEpochTime);
-    
+
 
 };

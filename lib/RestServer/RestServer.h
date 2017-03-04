@@ -8,19 +8,13 @@
 
 class RestServer {
   private:
-    const char* _ssid = "Jaques";
-    const char* _password = "Harien22";
-//    WiFiServer _server(80);
-    WiFiClient _client;
-//    WiFiServer server(80);
 
 
   public:
     RestServer();
-    int begin(const char* ssid, const char* password);
-    void clientResponse(char* json);
-/*    void clientResponse();
-    void CheckClientRequest();
-    //void ListReactionRequest(String request);
-*/
+    // int begin(const char* ssid, const char* password);
+    void clientResponse(WiFiClient& client, char* json);
+    void clientResponse(WiFiClient& client);
+    String checkClientRequest(WiFiClient& client);
+
 };
