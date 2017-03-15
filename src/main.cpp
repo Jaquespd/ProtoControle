@@ -38,6 +38,7 @@ NTPClient timeClient(ntpUDP, "time.nist.gov", TIMEZONE, UPDATE_NTP);
 const char* ssid = SSID;
 const char* password = PASSWORD;
 char json[SIZE_JSON];
+bool MODE_AUTO = true;
 
 //uint32_t freeMemory = ESP.getFreeHeap();
 
@@ -64,7 +65,9 @@ void loop ()
 {
   timeClient.update();
   listReactionRequest(restserver.checkClientRequest(client = server.available(), json, SIZE_JSON));
-  relays.checkReaction(programming, timeClient.getEpochTime());
+  if (MODE_AUTO == true) {
+    relays.checkReaction(programming, timeClient.getEpochTime());
+  }
 }
 
 void listReactionRequest(String request)
@@ -78,22 +81,26 @@ void listReactionRequest(String request)
   if(request.indexOf("SETPORTS") != -1){
     relays.deserialize(json);
     relays.updateState();
+    MODE_AUTO = false;
     returnJson=false;
-    // relays.print();
-    // delay(3000);
     }
-  if(request.indexOf("PROG") != -1){
+  if(request.indexOf("GETPROGRAMMING") != -1){
     programming.serialize(json,SIZE_JSON);
     returnJson=true;
     }
-  if(request.indexOf("QXT") != -1){
+  if(request.indexOf("SETPROGRAMMING") != -1){
     programming.deserialize(json);
-    relays.checkReaction(programming, timeClient.getEpochTime());
+    // se ativar aqui pode dar problema nas views, pois vai passar para automatico sem avisar o app
+    // relays.checkReaction(programming, timeClient.getEpochTime());
     returnJson=false;
     }
-  if(request.indexOf("RELOGIO") != -1){
+  if(request.indexOf("CLOCK") != -1){
     timeClient.serialize(json, SIZE_JSON);
     returnJson=true;
+    }
+  if(request.indexOf("MODEAUTO") != -1){
+    MODE_AUTO = true;
+    returnJson = false;
     }
 
   if (returnJson){
