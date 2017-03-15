@@ -10,17 +10,17 @@ void Programming::begin() {
   Serial.println("Deu certo Programming!");
 }
 
-void Programming::serialize (char* json)
+void Programming::serialize (char* json, const int SIZE_JSON)
 {
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
     for (int i=0;i<N_PROGRAMMING;i++){
       JsonObject& nested = array.createNestedObject();
       nested["id"] = this->_programming[i].id;
-      nested["HoraLigar"] = Programming::convertFormattedTime(this->_programming[i].timeOn);
-      nested["HoraDesligar"] = Programming::convertFormattedTime(this->_programming[i].timeOff);
+      nested["timeOn"] = this->convertFormattedTime(this->_programming[i].timeOn);
+      nested["timeOff"] = this->convertFormattedTime(this->_programming[i].timeOff);
     }
-    array.printTo(json,1000);
+    array.printTo(json,SIZE_JSON);
     array.printTo(Serial);
 
 }
@@ -32,10 +32,10 @@ bool Programming::deserialize(char* json)
     JsonArray& array = jsonBuffer.parseArray(json);
     for(int i=0;i<N_PROGRAMMING;i++){
       this->_programming[i].id = array[i]["id"];//talvez precise transformar em int
-      this->_programming[i].timeOn=Programming::convertEpochTime(array[i]["HoraLigar"]);
-      this->_programming[i].timeOff=Programming::convertEpochTime(array[i]["HoraDesligar"]);
+      this->_programming[i].timeOn=this->convertEpochTime(array[i]["timeOn"]);
+      this->_programming[i].timeOff=this->convertEpochTime(array[i]["timeOff"]);
       }
-    Programming::print();
+    this->print();
 
     return array.success();
 }
@@ -59,9 +59,9 @@ void Programming::print ()
     Serial.print("; Rele: ");
     Serial.print(this->_programming[i].id);
     Serial.print("; Hora de Ligar: ");
-    Serial.print(Programming::convertFormattedTime(this->_programming[i].timeOn));
+    Serial.print(this->convertFormattedTime(this->_programming[i].timeOn));
     Serial.print("; Hora de Desligar: ");
-    Serial.print(Programming::convertFormattedTime(this->_programming[i].timeOff));
+    Serial.print(this->convertFormattedTime(this->_programming[i].timeOff));
     Serial.println(".");
   }
 }

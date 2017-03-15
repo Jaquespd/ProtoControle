@@ -27,16 +27,16 @@ void Relays::read()
   }
 }
 
-void Relays::serialize (char* json)
+void Relays::serialize (char* json, const int SIZE_JSON)
 {
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
     for (int i=0;i<N_RELAY;i++){
       JsonObject& nested = array.createNestedObject();
       nested["id"] = this->_relays[i].id;
-      nested["estado"] = this->_relays[i].state;
+      nested["state"] = this->_relays[i].state;
     }
-    array.printTo(json,maxSizeJson);
+    array.printTo(json,SIZE_JSON);
     array.printTo(Serial);
 
 }
@@ -46,9 +46,14 @@ bool Relays::deserialize(char* json)
     DynamicJsonBuffer jsonBuffer;
     Serial.println(json);
     JsonArray& array = jsonBuffer.parseArray(json);
+    array.success() == true ? Serial.println("Parse Ok") : Serial.println("erro");
     for (int i=0;i<N_RELAY;i++){
       this->_relays[i].id = array[i]["id"];
-      this->_relays[i].state = array[i]["estado"];
+      this->_relays[i].state = array[i]["state"];
+      Serial.println("Teste: ");
+      array[i]["id"].printTo(Serial);
+      array[i]["state"].printTo(Serial);
+      delay(2000);
     }
     return array.success();
 }
@@ -75,19 +80,19 @@ void Relays::checkReaction(Programming programming, unsigned long getEpochTime)
 {
   unsigned long now = getEpochTime;
   for (int i = 0; i<N_RELAY; i++) {
-    Relays::write(i+1, 0, i+1);
+    this->write(i+1, 0, i+1);
   }
   for (int i=0; i<N_PROGRAMMING; i++) {
     if (programming._programming[i].timeOn < programming._programming[i].timeOff) {
       if (programming._programming[i].timeOn <= now && now <= programming._programming[i].timeOff) {
-        Relays::write(programming._programming[i].id, 1, programming._programming[i].id);
+        this->write(programming._programming[i].id, 1, programming._programming[i].id);
       }
     }
     if (programming._programming[i].timeOn > programming._programming[i].timeOff) {
       if (programming._programming[i].timeOn <= now || now <= programming._programming[i].timeOff) {
-        Relays::write(programming._programming[i].id, 1, programming._programming[i].id);
+        this->write(programming._programming[i].id, 1, programming._programming[i].id);
       }
     }
   }
-  Relays::updateState();
+  this->updateState();
 }

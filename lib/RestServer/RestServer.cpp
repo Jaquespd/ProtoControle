@@ -32,7 +32,7 @@ void RestServer::clientResponse(WiFiClient& client)
 
 }
 
-String RestServer::checkClientRequest(WiFiClient& client)
+String RestServer::checkClientRequest(WiFiClient& client, char* json, const int SIZE_JSON)
 {
     // Check if a client has connected
     //client = server.available();
@@ -59,6 +59,8 @@ String RestServer::checkClientRequest(WiFiClient& client)
     beginJson = req.indexOf("[");
     endJson = req.indexOf("]");
     msgReceive = req.substring(beginJson,endJson+1);
+    json = NULL;
+    msgReceive.toCharArray(json, SIZE_JSON);
     Serial.print("msgRecebida: ");
     Serial.println(msgReceive);
       }else{
@@ -66,6 +68,8 @@ String RestServer::checkClientRequest(WiFiClient& client)
         beginJson = req.indexOf("{");
         endJson = req.indexOf("}");
         msgReceive = req.substring(beginJson,endJson+1);
+        json = NULL;
+        msgReceive.toCharArray(json, SIZE_JSON);
         Serial.print("msgRecebida: ");
         Serial.println(msgReceive);
           }

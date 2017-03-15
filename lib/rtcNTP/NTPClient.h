@@ -3,6 +3,7 @@
 #include "Arduino.h"
 
 #include <Udp.h>
+#include <ArduinoJson.h>
 
 #define SEVENZYYEARS 2208988800UL
 #define NTP_PACKET_SIZE 48
@@ -95,6 +96,11 @@ class NTPClient {
      * @convert time formatted from user for time in milliseconds
      */
     unsigned long convertEpochTime(String userTime);
+
+    /**
+     * @serialize with json formatted time
+     */
+    void serialize(char* json, const int SIZE_JSON);
 
     /**
      * @return time in seconds since Jan. 1, 1970

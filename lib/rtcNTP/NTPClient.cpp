@@ -168,6 +168,23 @@ unsigned long NTPClient::convertEpochTime(String userTime) {
   return 3600*hoursStr.toInt()+60*minuteStr.toInt()+secondStr.toInt();
 }
 
+void NTPClient::serialize(char* json, const int SIZE_JSON) {
+  DynamicJsonBuffer jsonBuffer;
+  JsonArray& array = jsonBuffer.createArray();
+  JsonObject& nested = array.createNestedObject();
+  unsigned long rawTime = this->getEpochTime();
+  unsigned long hours = (rawTime % 86400L) / 3600;
+  nested["hours"] = hours < 10 ? "0" + String(hours) : String(hours);
+  unsigned long minutes = (rawTime % 3600) / 60;
+  nested["minutes"] = minutes < 10 ? "0" + String(minutes) : String(minutes);
+  unsigned long seconds = rawTime % 60;
+  nested["seconds"] = seconds < 10 ? "0" + String(seconds) : String(seconds);
+
+  array.printTo(json,SIZE_JSON);
+  array.printTo(Serial);
+
+}
+
 void NTPClient::end() {
   this->_udp->stop();
 

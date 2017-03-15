@@ -5,7 +5,6 @@
 #include <Programming.h>
 
 #define N_RELAY 4
-#define maxSizeJson 1000
 
 
 typedef struct Relay_t {
@@ -23,7 +22,7 @@ class Relays {
     Relays();
     void begin();
     void write(int id, int state, int i);
-    void serialize (char* json);
+    void serialize (char* json, const int SIZE_JSON);
     void read();
     bool deserialize(char* json);
     void updateState();

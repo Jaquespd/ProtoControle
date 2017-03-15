@@ -5,7 +5,6 @@
 
 
 #define N_PROGRAMMING 10
-//#define maxSizeJson 1000
 
 
 typedef struct Programming_t {
@@ -26,7 +25,7 @@ class Programming {
     Programming();
     void begin();
     void write(int id, unsigned long timeOn, unsigned long timeOff);
-    void serialize (char* json);
+    void serialize (char* json, const int SIZE_JSON);
     bool deserialize(char* json);
     void random(unsigned long getEpochTime);
     void print();
