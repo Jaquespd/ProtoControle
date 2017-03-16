@@ -17,7 +17,7 @@ void RestServer::clientResponse(WiFiClient& client, char* json)
     client.println(json);
     delay(1);
     client.stop();
-    Serial.println("Client disonnected");
+    //Serial.println("Client disonnected");
 }
 
 void RestServer::clientResponse(WiFiClient& client)
@@ -28,7 +28,7 @@ void RestServer::clientResponse(WiFiClient& client)
   client.println();
 
   client.stop();
-  Serial.println("Client disonnected");
+  //Serial.println("Client disonnected");
 
 }
 
@@ -37,7 +37,7 @@ String RestServer::checkClientRequest(WiFiClient& client, char* json, const int 
     // Check if a client has connected
     //client = server.available();
     if (!client) {
-      return "no_client";
+      return "-1";
       }
 
     // Wait until the client sends some data
@@ -59,19 +59,20 @@ String RestServer::checkClientRequest(WiFiClient& client, char* json, const int 
     beginJson = req.indexOf("[");
     endJson = req.indexOf("]");
     msgReceive = req.substring(beginJson,endJson+1);
-    json = NULL;
     msgReceive.toCharArray(json, SIZE_JSON);
     Serial.print("msgRecebida: ");
     Serial.println(msgReceive);
+    // Serial.println(json);
+
       }else{
         if(req.indexOf("{")!= -1){
         beginJson = req.indexOf("{");
         endJson = req.indexOf("}");
         msgReceive = req.substring(beginJson,endJson+1);
-        json = NULL;
         msgReceive.toCharArray(json, SIZE_JSON);
         Serial.print("msgRecebida: ");
         Serial.println(msgReceive);
+        // Serial.println(json);
           }
         }
     //identifica o que a requisição pediu e encaminha para a rotina que vai realizar a ação

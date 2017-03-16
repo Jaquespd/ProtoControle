@@ -44,16 +44,11 @@ void Relays::serialize (char* json, const int SIZE_JSON)
 bool Relays::deserialize(char* json)
 {
     DynamicJsonBuffer jsonBuffer;
-    Serial.println(json);
     JsonArray& array = jsonBuffer.parseArray(json);
-    array.success() == true ? Serial.println("Parse Ok") : Serial.println("erro");
+    // array.success() == true ? Serial.println("Parse Ok") : Serial.println("erro");
     for (int i=0;i<N_RELAY;i++){
       this->_relays[i].id = array[i]["id"];
       this->_relays[i].state = array[i]["state"];
-      Serial.println("Teste: ");
-      array[i]["id"].printTo(Serial);
-      array[i]["state"].printTo(Serial);
-      delay(2000);
     }
     return array.success();
 }

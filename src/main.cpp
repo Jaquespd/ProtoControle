@@ -72,6 +72,7 @@ void loop ()
 
 void listReactionRequest(String request)
 {
+  if (request == "-1") { return; }
   bool returnJson=false;
   if(request.indexOf("GETPORTS") != -1){
     relays.read();
